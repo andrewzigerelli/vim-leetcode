@@ -22,6 +22,7 @@ endfu
 
 fu! leetcode#lang#utils#addDependencies()
   exe 'cal leetcode#lang#' .g:leetcode_lang .'#addDependencies()'
+  exe 'cal leetcode#lang#' .g:leetcode_lang .'#appendDriverCode()'
 endfu
 
 fu! leetcode#lang#utils#foldDependencies()

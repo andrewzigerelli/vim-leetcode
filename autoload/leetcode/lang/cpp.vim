@@ -14,7 +14,16 @@ let s:dependencies = [
       \'#include <queue>',  '#include <bitset>', 
       \'#include <utility>',  '#include <algorithm>',  
       \'#include <string>', '#include <limits>',  
-      \'using namespace std;', '#endif', ''] 
+      \'using namespace std;', '#endif', '']
+
+let s:driver_code = [
+      \'', '#ifdef DEPENDENCIES',
+      \'int main(int argc, char **argv) {',
+      \'    /* method vars */', '',
+      \'    /* handle input */', '',
+      \'    /* call method */',
+      \'    Solution sln;', '',
+      \'    return 0;', '}', '#endif', '']
 let s:depend_location = '/\mclass\s\+solution\c\s\+{/-' 
 let s:code_begin_location = '?\m)\s*{?+'
 
@@ -45,6 +54,49 @@ fu! leetcode#lang#cpp#getCustomDependencies()
   cal map(custom_depend, {key, val -> matchstr(val, '\s*\*\+\s*\zs.*')})
   retu custom_depend
 endfu
+
+fu! leetcode#lang#cpp#appendDriverCode()
+  let old_ul = &ul
+  setl ul=-1
+  "" Add basic driver code
+  keepj norm! gg
+  let lc_code_end_line = search('@\s*lc\s*code\s*=\s*end')
+  keepj cal append(lc_code_end_line - 1, s:driver_code)
+
+  "" Get method args
+  let public_start = search('public:')
+  let method = getline(public_start + 1)
+  let method_split = split(method)
+  let func_no_return_val = join(method_split[1:])
+  let meth_args = matchstr(method, '(.*)')
+  let meth_args_no_paren = substitute(meth_args, '\((\|)\)', '', 'g')
+  let args_no_space = substitute(meth_args_no_paren, ', ', ',', 'g')
+  let args = split(args_no_space, ',')
+
+  "" Add method args & clean for method call later
+  let meth_vars_line = search('\/\* method vars \*\/')
+  let i = 0
+  for a in args
+      let cur_arg = '    ' . args[i] . ';'
+      keepj cal append(meth_vars_line + i, cur_arg)
+      ""clean for later
+      let args[i]= split(args[i])[1]
+      let i += 1
+  endfor
+
+  "" Clean up func_no_return val
+  let func_ = substitute(func_no_return_val, ' *{','', 'g')
+  let func_name = matchstr(func_, '.*(')
+  let arguments = join(args, ',')
+  let meth_call = '    sln.' . func_name . arguments . ');'
+  let meth_call = substitute(meth_call, ',', ', ', 'g')
+
+  "" Append method call
+  let soln_line = search('Solution sln;')
+  keepj cal append(soln_line, meth_call)
+  exe 'setlocal ul='.old_ul
+endfu
+
 
 fu! leetcode#lang#cpp#addDependencies()
   keepj norm! gg   
