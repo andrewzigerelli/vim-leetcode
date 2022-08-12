@@ -14,16 +14,20 @@ let s:dependencies = [
       \'#include <queue>',  '#include <bitset>', 
       \'#include <utility>',  '#include <algorithm>',  
       \'#include <string>', '#include <limits>',  
+      \'#include <gtest/gtest.h>',  
       \'using namespace std;', '#endif', '']
 
 let s:driver_code = [
       \'', '#ifdef DEPENDENCIES',
+      \'TEST(SolnComp, SolnOutput) {',
+      \'    // Change method arguments to test inputs',
+      \'    // Change output to expected output',
+      \'    Solution sln;',
+      \'}',
       \'int main(int argc, char **argv) {',
-      \'    /* method vars */', '',
-      \'    /* handle input */', '',
-      \'    /* call method */',
-      \'    Solution sln;', '',
-      \'    return 0;', '}', '#endif', '']
+      \'    ::testing::InitGoogleTest(&argc, argv);',
+      \'    return RUN_ALL_TESTS();',
+      \'}', '#endif',]
 let s:depend_location = '/\mclass\s\+solution\c\s\+{/-' 
 let s:code_begin_location = '?\m)\s*{?+'
 
@@ -67,14 +71,20 @@ fu! leetcode#lang#cpp#appendDriverCode()
   let public_start = search('public:')
   let method = getline(public_start + 1)
   let method_split = split(method)
+  let meth_return_type = method_split[0]
   let func_no_return_val = join(method_split[1:])
   let meth_args = matchstr(method, '(.*)')
   let meth_args_no_paren = substitute(meth_args, '\((\|)\)', '', 'g')
   let args_no_space = substitute(meth_args_no_paren, ', ', ',', 'g')
   let args = split(args_no_space, ',')
 
+  "" add function return value
+  let soln_line = search('Solution sln;')
+  let output_str = '    ' .  meth_return_type . ' output;'
+  keepj cal append(soln_line, output_str)
+
   "" Add method args & clean for method call later
-  let meth_vars_line = search('\/\* method vars \*\/')
+  let meth_vars_line = search('Solution sln;')
   let i = 0
   for a in args
       let cur_arg = '    ' . args[i] . ';'
@@ -84,16 +94,18 @@ fu! leetcode#lang#cpp#appendDriverCode()
       let i += 1
   endfor
 
-  "" Clean up func_no_return val
+
+  "" Clean up func_no_return val and create TEST 
   let func_ = substitute(func_no_return_val, ' *{','', 'g')
   let func_name = matchstr(func_, '.*(')
   let arguments = join(args, ',')
-  let meth_call = '    sln.' . func_name . arguments . ');'
+  let meth_call = 'sln.' . func_name . arguments . ')'
   let meth_call = substitute(meth_call, ',', ', ', 'g')
+  let meth_call = '    EXPECT_EQ (output, ' . meth_call . ');'
 
   "" Append method call
-  let soln_line = search('Solution sln;')
-  keepj cal append(soln_line, meth_call)
+  let output_line = search(output_str)
+  keepj cal append(output_line, meth_call)
   exe 'setlocal ul='.old_ul
 endfu
 
