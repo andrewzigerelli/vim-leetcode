@@ -1,5 +1,19 @@
 let s:lang = 'cpp'
 let s:ext = 'cpp'
+let s:Makefile = [
+      \'CXX=clang++',
+      \'DEBUG_FLAGS=-fsanitize=address -fsanitize=undefined -fno-sanitize-recover=all -fsanitize=float-divide-by-zero -fsanitize=float-cast-overflow -fno-sanitize=null -fno-sanitize=alignment -g',
+      \'CXX_FLAGS=-std=c++20',
+      \'',
+      \'all: *.cpp',
+      \'	$(CXX) $(CXX_FLAGS) $< -lgtest -lpthread -o soln',
+      \'',
+      \'debug: *.cpp',
+      \'	$(CXX) $(DEBUG_FLAGS) $< -lgtest -lpthread -o soln_debug',
+      \'',
+      \'clean: ',
+      \'	rm -f soln soln_debug',]
+
 let s:dependencies = [
       \'/*** [' .g:leetcode_name .'] For Local Syntax Checking ***/',
       \'#define DEPENDENCIES', '#ifdef DEPENDENCIES',
@@ -109,6 +123,9 @@ fu! leetcode#lang#cpp#appendDriverCode()
   exe 'setlocal ul='.old_ul
 endfu
 
+fu! leetcode#lang#cpp#addMakefile()
+    cal writefile(s:Makefile, "Makefile")
+endfu
 
 fu! leetcode#lang#cpp#addDependencies()
   keepj norm! gg   
